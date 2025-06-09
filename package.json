@@ -17,7 +17,14 @@
     "new-diary": "ts-node src/index.ts",
     "prepare": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "publish:npm": "node scripts/publish.js"
+    "publish:npm": "node scripts/publish.js",
+    "version:manage": "node scripts/version.js",
+    "prerelease": "node scripts/pre-release.js",
+    "release": "npm run prerelease && npm run version:manage",
+    "release:patch": "npm run publish:npm patch",
+    "release:minor": "npm run publish:npm minor",
+    "release:major": "npm run publish:npm major",
+    "release:dry": "npm run publish:npm patch --dry-run"
   },
   "keywords": [
     "diary",

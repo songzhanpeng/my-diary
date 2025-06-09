@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        registry-url: 'https://registry.npmjs.org'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      run: npm test
+
+    - name: Build
+      run: npm run build
+
+    - name: Publish to npm
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    - name: Extract release notes
+      id: extract_notes
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        
+        # 提取CHANGELOG中的发布说明
+        if [ -f CHANGELOG.md ]; then
+          # 提取当前版本的更改日志
+          NOTES=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d' | tail -n +2)
+          if [ -z "$NOTES" ]; then
+            NOTES="Release $VERSION"
+          fi
+        else
+          NOTES="Release $VERSION"
+        fi
+        
+        # 保存到文件
+        echo "$NOTES" > release_notes.md
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ steps.extract_notes.outputs.VERSION }}
+        body_path: release_notes.md
+        draft: false
+        prerelease: false
+
+  test-install:
+    needs: release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Test global install
+      run: |
+        npm install -g diary-cli
+        diary --version
+        diary --help 

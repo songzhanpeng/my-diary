@@ -22,13 +22,56 @@ npm link  # 链接到全局命令
 
 ### 发布到 npm
 
-```bash
-# 更新版本号
-npm version patch  # 或 minor, major
+#### 🚀 快速发布
 
-# 发布
-npm run publish:npm
+```bash
+# 交互式版本管理和发布
+npm run release
+
+# 快速发布 patch 版本
+npm run release:patch
+
+# 快速发布 minor 版本  
+npm run release:minor
+
+# 快速发布 major 版本
+npm run release:major
+
+# 干运行测试（不会实际发布）
+npm run release:dry
 ```
+
+#### 🔧 高级发布选项
+
+```bash
+# 预发布检查
+npm run prerelease
+
+# 手动发布脚本（支持更多选项）
+npm run publish:npm [patch|minor|major] [--dry-run] [--skip-tests]
+
+# 仅版本管理（不发布）
+npm run version:manage
+```
+
+#### 📋 发布流程
+
+1. **自动检查**：Git状态、构建、测试、依赖安全
+2. **版本管理**：根据提交自动建议版本类型
+3. **更新CHANGELOG**：自动生成变更日志
+4. **创建Git标签**：自动打标签并推送
+5. **发布npm**：自动发布到npm仓库
+6. **GitHub Release**：自动创建GitHub发布页面
+
+#### 🏷️ 自动标签
+
+- 支持语义化版本 (semantic versioning)
+- 根据提交信息自动建议版本类型：
+  - `feat:` → minor版本
+  - `fix:` → patch版本  
+  - `BREAKING CHANGE` → major版本
+- 自动创建Git标签: `v1.0.0`
+- 自动推送标签到远程仓库
 
 ### 基本使用
 
@@ -194,6 +237,28 @@ npm start
 - `diary git push` - 推送到远程仓库
 - `diary git pull` - 从远程仓库拉取
 
+## 📚 文档
+
+- [📋 发布指南](./docs/release-guide.md) - 详细的发布流程和最佳实践
+- [📖 API 文档](./src/) - 源代码和API说明
+- [📝 更新日志](./CHANGELOG.md) - 版本更新记录
+
 ## 🔧 自定义
 
-要自定义日记模板格式，请修改 `src/index.ts` 中的 `generateTemplate` 方法。 
+要自定义日记模板格式，请修改 `src/index.ts` 中的 `generateTemplate` 方法。
+
+## 🤝 贡献
+
+欢迎贡献代码！请遵循以下步骤：
+
+1. Fork 本仓库
+2. 创建功能分支: `git checkout -b feature/amazing-feature`
+3. 提交更改: `git commit -m 'feat: add amazing feature'`
+4. 推送分支: `git push origin feature/amazing-feature`
+5. 提交 Pull Request
+
+请使用 [Conventional Commits](https://conventionalcommits.org/) 规范提交信息。
+
+## 📄 许可证
+
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。 
