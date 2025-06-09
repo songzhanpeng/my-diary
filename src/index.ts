@@ -1,17 +1,33 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import { ConfigManager, DiaryConfig } from './config';
+import { GitManager } from './git';
 
 interface DiaryTemplate {
   date: string;
   template: string;
 }
 
-class DiaryGenerator {
-  private diariesDir: string;
+export class DiaryGenerator {
+  private configManager: ConfigManager;
+  private gitManager?: GitManager;
+  private config!: DiaryConfig;
 
   constructor() {
-    this.diariesDir = path.join(process.cwd(), 'diaries');
-    this.ensureDiariesDirectory();
+    this.configManager = new ConfigManager();
+  }
+
+  /**
+   * 初始化配置
+   */
+  async initialize(): Promise<void> {
+    this.config = await this.configManager.getConfig();
+    await this.ensureDiariesDirectory();
+    
+    if (this.config.gitEnabled) {
+      this.gitManager = new GitManager(this.config);
+      await this.gitManager.initRepository();
+    }
   }
 
   /**
@@ -19,7 +35,7 @@ class DiaryGenerator {
    */
   private async ensureDiariesDirectory(): Promise<void> {
     try {
-      await fs.ensureDir(this.diariesDir);
+      await fs.ensureDir(this.config.diariesDir);
     } catch (error) {
       console.error('创建日记目录失败:', error);
     }
@@ -84,7 +100,7 @@ class DiaryGenerator {
     const year = date.getFullYear().toString();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const filename = `${this.formatDate(date)}.md`;
-    const dirPath = path.join(this.diariesDir, year, month);
+    const dirPath = path.join(this.config.diariesDir, year, month);
     const filepath = path.join(dirPath, filename);
     
     return { dirPath, filename, filepath };
@@ -113,6 +129,11 @@ class DiaryGenerator {
       await fs.writeFile(filepath, diary.template, 'utf-8');
       console.log(`✅ 成功创建日记文件: ${filename}`);
       console.log(`📂 文件路径: ${filepath}`);
+      
+      // 如果启用了Git，自动提交
+      if (this.config.gitEnabled && this.config.autoCommit) {
+        await this.commitDiary(filepath, targetDate);
+      }
       
       return filepath;
     } catch (error) {
@@ -159,7 +180,7 @@ class DiaryGenerator {
    */
   async listDiaries(): Promise<string[]> {
     try {
-      const diaryFiles = await this.getAllDiaryFiles(this.diariesDir);
+      const diaryFiles = await this.getAllDiaryFiles(this.config.diariesDir);
       
       if (diaryFiles.length === 0) {
         console.log('📭 暂无日记文件');
@@ -182,6 +203,72 @@ class DiaryGenerator {
     } catch (error) {
       console.error('读取日记目录失败:', error);
       return [];
+    }
+  }
+
+  /**
+   * 从日记文件中提取一句话情绪
+   */
+  async extractEmotion(filePath: string): Promise<string | null> {
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      const lines = content.split('\n');
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line.includes('## 💭 一句话情绪')) {
+          // 查找下一行的内容
+          for (let j = i + 1; j < lines.length; j++) {
+            const emotionLine = lines[j].trim();
+            if (emotionLine.startsWith('>') && emotionLine.length > 1) {
+              return emotionLine.substring(1).trim();
+            }
+            if (emotionLine && !emotionLine.startsWith('>')) {
+              break; // 遇到非情绪内容，停止搜索
+            }
+          }
+        }
+      }
+      return null;
+    } catch (error) {
+      console.warn(`读取日记文件失败: ${filePath}`);
+      return null;
+    }
+  }
+
+  /**
+   * 生成Git提交信息
+   */
+  async generateCommitMessage(filePath: string, date: Date): Promise<string> {
+    if (this.config.useEmotionAsCommit) {
+      const emotion = await this.extractEmotion(filePath);
+      if (emotion) {
+        return `📝 ${this.formatDateChinese(date)}: ${emotion}`;
+      }
+    }
+    
+    return this.config.defaultCommitMessage + ` - ${this.formatDateChinese(date)}`;
+  }
+
+  /**
+   * 提交日记到Git
+   */
+  async commitDiary(filePath: string, date: Date, customMessage?: string): Promise<void> {
+    if (!this.config.gitEnabled || !this.gitManager) {
+      return;
+    }
+
+    try {
+      const commitMessage = customMessage || await this.generateCommitMessage(filePath, date);
+      const relativePath = path.relative(this.config.diariesDir, filePath);
+      
+      await this.gitManager.commitFile(relativePath, commitMessage);
+      
+      if (this.config.autoCommit && this.config.gitRemoteUrl) {
+        await this.gitManager.pushToRemote();
+      }
+    } catch (error) {
+      console.warn('Git提交失败:', error);
     }
   }
 
@@ -315,4 +402,4 @@ if (require.main === module) {
   main().catch(console.error);
 }
 
-export { DiaryGenerator }; 
+// DiaryGenerator is already exported above 

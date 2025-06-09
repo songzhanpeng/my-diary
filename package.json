@@ -1,21 +1,49 @@
 {
-  "name": "diary-generator",
+  "name": "diary-cli",
   "version": "1.0.0",
-  "description": "每日日记生成器",
+  "description": "智能日记生成器 - 支持本地存储和Git同步",
   "main": "dist/index.js",
+  "bin": {
+    "diary": "dist/cli.js"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "new-diary": "ts-node src/index.ts"
+    "new-diary": "ts-node src/index.ts",
+    "prepare": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "publish:npm": "node scripts/publish.js"
+  },
+  "keywords": [
+    "diary",
+    "cli",
+    "git",
+    "markdown",
+    "typescript"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/diary-cli.git"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.0.0",
+    "@types/inquirer": "^8.2.10",
     "ts-node": "^10.9.0",
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "fs-extra": "^11.0.0"
+    "fs-extra": "^11.0.0",
+    "simple-git": "^3.24.0",
+    "inquirer": "^8.2.6",
+    "commander": "^11.1.0",
+    "chalk": "^4.1.2"
   }
 }

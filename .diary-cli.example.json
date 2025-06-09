@@ -1,0 +1,9 @@
+{
+  "diariesDir": "./diaries",
+  "gitEnabled": true,
+  "gitRemoteUrl": "https://github.com/your-username/my-diary.git",
+  "gitBranch": "main",
+  "autoCommit": true,
+  "useEmotionAsCommit": true,
+  "defaultCommitMessage": "📝 更新日记"
+} 
